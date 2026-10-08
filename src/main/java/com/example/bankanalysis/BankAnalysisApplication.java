@@ -2,7 +2,7 @@ package com.example.bankanalysis;
 
 import com.example.bankanalysis.cli.CommandLineRunner;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner as SpringCommandLineRunner;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -15,7 +15,7 @@ public class BankAnalysisApplication {
     }
 
     @Bean
-    public SpringCommandLineRunner runner(@Autowired CommandLineRunner cliRunner) {
+    public CommandLineRunner springRunner(@Autowired com.example.bankanalysis.cli.CommandLineRunner cliRunner) {
         return args -> cliRunner.run(args);
     }
 }
