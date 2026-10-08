@@ -1,0 +1,28 @@
+bank: ABC
+type: PERSONAL
+columnMapping:
+  transactionDate:
+    - "交易日期"
+    - "交易时间"
+  transactionId:
+    - "交易流水号"
+    - "流水号"
+  debitAmount:
+    - "支出"
+    - "支出金额"
+  creditAmount:
+    - "收入"
+    - "收入金额"
+  balance:
+    - "余额"
+  counterpartyName:
+    - "对方户名"
+    - "交易对方"
+  counterpartyAccount:
+    - "对方账号"
+  summary:
+    - "摘要"
+    - "交易摘要"
+    - "附言"
+  transactionType:
+    - "交易类型"
