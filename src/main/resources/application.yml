@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: bank-statement-analysis-java
+  main:
+    web-application-type: none
+
+logging:
+  level:
+    root: INFO
+    com.example.bankanalysis: DEBUG
