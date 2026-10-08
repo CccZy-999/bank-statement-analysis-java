@@ -1,0 +1,31 @@
+                    {{companyName}} 资金流水分析报告
+
+账号：{{accountNo}}    报告日期：{{reportDate}}
+数据区间：{{startDate}} ~ {{endDate}}
+
+一、账户概览
+    总进账：{{totalInflow}}
+    总出账：{{totalOutflow}}
+    净现金流：{{netFlow}}
+
+二、数据质量
+    余额连续性检查：{{balanceCheckResult}}
+    Benford 检验：{{benfordResult}}
+
+三、月度现金流趋势
+{{monthlyTrendChart}}
+
+四、主要进账对手方
+{{topCounterpartyChart}}
+
+进账 TOP 对手方明细：
+{{topInflowCounterparties}}
+
+出账 TOP 对手方明细：
+{{topOutflowCounterparties}}
+
+五、进账构成
+{{inflowCompositionChart}}
+
+六、出账构成
+{{outflowCompositionChart}}
