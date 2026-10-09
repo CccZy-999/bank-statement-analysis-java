@@ -26,7 +26,13 @@ public abstract class AbstractExcelParser implements BankStatementParser {
 
     /** 子类提供列映射候选表 */
     protected abstract Map<String, List<String>> columnMapping();
-
+    
+    public List<Transaction> parse(InputStream inputStream, String filename) throws Exception {
+        if (filename != null && filename.toLowerCase().endsWith(".csv")) {
+            return parseCsv(inputStream);
+        }
+        return parseExcel(inputStream);
+    }
     @Override
     public List<Transaction> parse(InputStream inputStream) throws Exception {
         List<Transaction> result = new ArrayList<>();
