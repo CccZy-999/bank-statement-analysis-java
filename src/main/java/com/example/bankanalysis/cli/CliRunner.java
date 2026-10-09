@@ -2,6 +2,7 @@ package com.example.bankanalysis.cli;
 
 import com.example.bankanalysis.metrics.CounterpartyMetrics;
 import com.example.bankanalysis.model.AnalysisResult;
+import com.example.bankanalysis.model.Transaction;
 import com.example.bankanalysis.parser.BankStatementParser;
 import com.example.bankanalysis.parser.ParserFactory;
 import com.example.bankanalysis.processor.DataQualityValidator;
@@ -21,9 +22,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Component
-public class CommandLineRunner {
+public class CliRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(CommandLineRunner.class);
+    private static final Logger log = LoggerFactory.getLogger(CliRunner.class);
 
     @Autowired private ParserFactory parserFactory;
     @Autowired private DataStandardizer dataStandardizer;
@@ -48,8 +49,16 @@ public class CommandLineRunner {
 
         log.info("开始解析流水文件: {}", input);
         BankStatementParser parser = parserFactory.getParser(bank, type);
-        List<com.example.bankanalysis.model.Transaction> transactions =
-                parser.parse(Files.newInputStream(Paths.get(input)));
+
+        // 同时传入文件名以支持 CSV 自动识别
+        List<Transaction> transactions;
+        try (var in = Files.newInputStream(Paths.get(input))) {
+            if (parser instanceof com.example.bankanalysis.parser.AbstractExcelParser aep) {
+                transactions = aep.parse(in, input);
+            } else {
+                transactions = parser.parse(in);
+            }
+        }
 
         log.info("解析完成，共 {} 笔交易，开始标准化...", transactions.size());
         transactions = dataStandardizer.standardize(transactions);
@@ -66,14 +75,23 @@ public class CommandLineRunner {
         result.setTotalInflow(sum(transactions, true));
         result.setTotalOutflow(sum(transactions, false));
         result.setNetFlow(result.getTotalInflow().subtract(result.getTotalOutflow()));
-        result.setStartDate(transactions.stream().map(TransactionDateExtractor::getDate)
-                .filter(d -> d != null).min(LocalDate::compareTo).orElse(null));
-        result.setEndDate(transactions.stream().map(TransactionDateExtractor::getDate)
-                .filter(d -> d != null).max(LocalDate::compareTo).orElse(null));
+
+        LocalDate start = null, end = null;
+        for (Transaction t : transactions) {
+            if (t.getTransactionDate() == null) continue;
+            if (start == null || t.getTransactionDate().isBefore(start)) start = t.getTransactionDate();
+            if (end == null || t.getTransactionDate().isAfter(end)) end = t.getTransactionDate();
+        }
+        result.setStartDate(start);
+        result.setEndDate(end);
 
         counterpartyMetrics.compute(result);
+        // 补充调用现金流和构成分析
+        new com.example.bankanalysis.metrics.CashFlowMetrics().compute(result);
+        new com.example.bankanalysis.metrics.FlowCompositionMetrics().compute(result);
 
-        new File(output).getParentFile().mkdirs();
+        File outFile = new File(output);
+        if (outFile.getParentFile() != null) outFile.getParentFile().mkdirs();
 
         if ("MARKDOWN".equalsIgnoreCase(format)) {
             markdownReportGenerator.generate(result, output);
@@ -84,9 +102,9 @@ public class CommandLineRunner {
         }
     }
 
-    private BigDecimal sum(List<com.example.bankanalysis.model.Transaction> list, boolean inflow) {
+    private BigDecimal sum(List<Transaction> list, boolean inflow) {
         BigDecimal total = BigDecimal.ZERO;
-        for (com.example.bankanalysis.model.Transaction t : list) {
+        for (Transaction t : list) {
             BigDecimal v = inflow ? t.getCreditAmount() : t.getDebitAmount();
             if (v != null) total = total.add(v);
         }
@@ -100,11 +118,5 @@ public class CommandLineRunner {
             }
         }
         return defaultValue;
-    }
-
-    static class TransactionDateExtractor {
-        static LocalDate getDate(com.example.bankanalysis.model.Transaction t) {
-            return t.getTransactionDate();
-        }
     }
 }
